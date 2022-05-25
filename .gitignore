@@ -1,0 +1,13 @@
+# Temporary data that needs storage
+cache
+data/
+
+# Application files/folders
+*.pyc
+__pycache__/
+
+# IDE files/folders
+venv/
+*.swp
+.vscode/
+example/
