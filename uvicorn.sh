@@ -1,2 +1,2 @@
 #/bin/sh
-PATH=$PATH:. uvicorn main:app --reload
+PATH=$PATH:. uvicorn main:app --port $PORT $@
