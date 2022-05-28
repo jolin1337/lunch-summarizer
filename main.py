@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import traceback
 from fastapi import FastAPI, Response, Request
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
@@ -65,6 +66,7 @@ def do_request(url, save_base_url: bool = False):
     except requests.exceptions.SSLError:
         response = Response(status_code=495)
     except requests.exceptions.ConnectionError:
+        print("Connection error!")
         response = Response(status_code=404)
     return response
 
@@ -150,7 +152,7 @@ def get_restaurant_menues():
                     menu['food_description'] = driver.find_element(
                         by=By.CSS_SELECTOR, value=menu['extractor']).text
             except:
-                pass
+                print(traceback.format_exc())
             menu['last_updated'] = now.isoformat()
             table = tables['Menu']
             if connection is None:
