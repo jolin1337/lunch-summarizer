@@ -38,14 +38,15 @@ except:
 schemas_json = [Menu.schema()]
 tables = {}
 with engine.connect() as connection:
+    dbmeta = MetaData()
     for schema in schemas_json:
         columns = [Column(name=key, type_=db_types[prop['type'].title()], default=None)
                    for key, prop in schema['properties'].items()]
-        dbmeta = MetaData()
         tables[schema['title']] = Table(schema['title'], dbmeta, *columns)
-        if not inspect(engine).has_table(schema['title']):
-            print("Creating " + schema['title']) 
-            dbmeta.create_all(engine)
+        #if not inspect(engine).has_table(schema['title']):
+        #    print("Creating " + schema['title'])
+        #    tables[schema['title']].__table__.create(bind=engine, checkfirst=True)
+     dbmeta.create_all(checkFirst=True)
     data = get_menu_from_db(connection)
 
 
