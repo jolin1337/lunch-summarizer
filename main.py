@@ -35,15 +35,16 @@ try:
     engine = engine_from_config(config, prefix='')
 except:
     engine = create_engine(os.environ.get('DB_URI'))
-dbmeta = MetaData()
 schemas_json = [Menu.schema()]
 tables = {}
 with engine.connect() as connection:
     for schema in schemas_json:
         columns = [Column(name=key, type_=db_types[prop['type'].title()], default=None)
                    for key, prop in schema['properties'].items()]
+        dbmeta = MetaData()
         tables[schema['title']] = Table(schema['title'], dbmeta, *columns)
-    dbmeta.create_all(engine)
+        if not engine.dialect.has_table(engine, schema['title']):
+            dbmeta.create_all(engine)
     data = get_menu_from_db(connection)
 
 
