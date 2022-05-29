@@ -46,7 +46,7 @@ with engine.connect() as connection:
         #if not inspect(engine).has_table(schema['title']):
         #    print("Creating " + schema['title'])
         #    tables[schema['title']].__table__.create(bind=engine, checkfirst=True)
-     dbmeta.create_all(checkFirst=True)
+    dbmeta.create_all(checkFirst=True)
     data = get_menu_from_db(connection)
 
 
