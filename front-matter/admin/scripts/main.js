@@ -173,7 +173,7 @@
         path = path + ' ' + subpath;
         if (els.length > 1) {
             const nth = els.indexOf(elem);
-            path = path + ':nth-child(' + nth + ')';
+            path = path + ':nth-child(' + (nth + 1) + ')';
         }
         return path;
     }
