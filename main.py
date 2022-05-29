@@ -92,8 +92,8 @@ def render_external_sub_page(url: str, request: Request):
 
 @app.post("/api/scrape/external")
 def add_external_pattern(menu: Menu):
-    global data
     with engine.connect() as connection:
+        data = get_menu_from_db(connection)
         if data[(data.dow == menu.dow) & (data.restaurant == menu.restaurant)].shape[0] == 0:
             ex = tables['Menu'].insert().values(**menu.dict())
         else:
@@ -108,12 +108,11 @@ def add_external_pattern(menu: Menu):
                 ).values(**menu.dict())
             )
         connection.execute(ex)
-        data = get_menu_from_db(connection)
+        # data = get_menu_from_db(connection)
 
 
 @app.delete("/api/scrape/external")
 def remove_external_pattern(menu: Menu):
-    global data
     with engine.connect() as connection:
         data = get_menu_from_db(connection)
         if data[(data.dow == menu.dow) & (data.restaurant == menu.restaurant)].shape[0] > 0:
@@ -128,13 +127,15 @@ def remove_external_pattern(menu: Menu):
             )
             print(ex)
             connection.execute(ex)
-            data = get_menu_from_db(connection)
+            # data = get_menu_from_db(connection)
 
 
 @app.get("/api/restaurants/menu")
 def get_restaurant_menues():
-    global data
-    menues = list(data.to_dict(orient='index').values())
+    menues = []
+    with engine.connect() as connection:
+        data = get_menu_from_db(connection)
+        menues = list(data.to_dict(orient='index').values())
     driver = chromebrowser.load_web_driver()
     connection = None
     transaction = None
@@ -169,6 +170,6 @@ def get_restaurant_menues():
             ))
     if connection is not None:
         transaction.commit()
-        data = get_menu_from_db(connection)
+        # data = get_menu_from_db(connection)
         connection.close()
     return menues
