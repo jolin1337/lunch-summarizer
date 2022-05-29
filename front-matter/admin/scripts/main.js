@@ -157,7 +157,7 @@
             `).appendTo(webpreview);
         }
     };
-
+    
     function getPath(elem) {
         if (elem.id)
             return "#" + elem.id;
@@ -167,8 +167,8 @@
         let subpath = elem.tagName;
         let els = Array.from(elem.parentNode.children).filter(c => c.tagName === elem.tagName);
         if (elem.className) {
-            els = els.filter(c => Array.from(c.classList).filter(cl => elem.classList.contains(cl)).length === c.classList.length)
-            subpath = " > " + elem.tagName + "." + elem.className.replace(/ /g, '.');
+            els = els.filter(c => Math.max(Array.from(c.classList).map(cl => !elem.classList.contains(cl))) == 0)
+            subpath = "> " + elem.tagName + "." + elem.className.replace(/ /g, '.');
         }
         path = path + ' ' + subpath;
         if (els.length > 1) {
