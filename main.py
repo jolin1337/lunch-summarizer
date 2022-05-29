@@ -6,7 +6,7 @@ from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 import requests
 import pandas as pd
-from sqlalchemy import Column, MetaData, engine_from_config, Table, and_, create_engine
+from sqlalchemy import inspect, Column, MetaData, engine_from_config, Table, and_, create_engine
 from sqlalchemy import types as db_types
 import yaml
 from api.schema.menu import Menu
@@ -43,7 +43,7 @@ with engine.connect() as connection:
                    for key, prop in schema['properties'].items()]
         dbmeta = MetaData()
         tables[schema['title']] = Table(schema['title'], dbmeta, *columns)
-        if not engine.dialect.has_table(engine, schema['title']):
+        if not inspect(engine).has_table(schema['title']):
             dbmeta.create_all(engine)
     data = get_menu_from_db(connection)
 
