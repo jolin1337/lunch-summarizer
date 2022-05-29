@@ -44,6 +44,7 @@ with engine.connect() as connection:
         dbmeta = MetaData()
         tables[schema['title']] = Table(schema['title'], dbmeta, *columns)
         if not inspect(engine).has_table(schema['title']):
+            print("Creating " + schema['title']) 
             dbmeta.create_all(engine)
     data = get_menu_from_db(connection)
 
