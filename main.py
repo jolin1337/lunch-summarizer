@@ -15,7 +15,7 @@ from selenium.webdriver.common.by import By
 
 
 def get_menu_from_db(connection):
-    d = pd.read_sql_table('"Menu"', connection, parse_dates=['last_updated'])
+    d = pd.read_sql_table('public."Menu"', connection, parse_dates=['last_updated'])
     print(d)
     return d
 
