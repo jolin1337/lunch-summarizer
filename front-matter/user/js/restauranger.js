@@ -7,10 +7,10 @@
         return 'https://' + encodeURI(html);
     }
     function handleMenu(data) {
-        const newlyupdated = $('#newlyupdated h6');
-        const staticmenu = $('#staticmenu h6');
-        const weekmenu = $('#weekmenu h6');
-        const allmenu = $('#allmenu h6');
+        const newlyupdated = $('#newlyupdated .content').text('');
+        const staticmenu = $('#staticmenu .content').text('');
+        const weekmenu = $('#weekmenu .content').text('');
+        const allmenu = $('#allmenu .content').text('');
         const restaurants = data.reduce((p, c) => {
             return {
                 ...p,
@@ -40,15 +40,15 @@
         }
         Object.values(restaurants).forEach(records => {
             const staticRecords = records.filter(r => filterTypes(r).includes('static') && r.restaurant && r.source_url);
-            if (staticRecords.length > 0) restaurantTemplate(staticRecords[0]).clone().insertAfter(staticmenu);
+            if (staticRecords.length > 0) restaurantTemplate(staticRecords[0]).clone().appendTo(staticmenu);
             records.forEach(record => {
                 const { restaurant, source_url } = record;
                 if (!restaurant || !source_url) return;
                 const item = restaurantTemplate(record);
                 const types = filterTypes(record);
-                if (types.includes('weekly')) item.clone().insertAfter(weekmenu);
-                if (types.includes('newlyupdated')) item.clone().insertAfter(newlyupdated);
-                item.clone().insertAfter(allmenu);
+                if (types.includes('weekly')) item.clone().appendTo(weekmenu);
+                if (types.includes('newlyupdated')) item.clone().appendTo(newlyupdated);
+                item.clone().appendTo(allmenu);
             });
         });
         $('#randomFoodModal').on('show.bs.modal', function (event) {
