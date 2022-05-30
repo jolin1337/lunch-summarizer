@@ -91,7 +91,7 @@ def render_external_sub_page(url: str, request: Request):
         if not url.startswith('http') and base_url is not None else url
     )
     if not sub_url.startswith('http'):
-        return None
+        sub_url = 'https://' + sub_url
     return do_request(sub_url)
 
 
