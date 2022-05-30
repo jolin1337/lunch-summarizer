@@ -6,9 +6,8 @@
         if (html.startsWith('http')) return encodeURI(html);
         return 'https://' + encodeURI(html);
     }
-    $.get('/api/restaurants/menu').then((data) => {
-        console.log(data)
-        const uptodate = $('#uptodate h6');
+    function handleMenu(data) {
+        const newlyupdated = $('#newlyupdated h6');
         const staticmenu = $('#staticmenu h6');
         const weekmenu = $('#weekmenu h6');
         const allmenu = $('#allmenu h6');
@@ -18,26 +17,88 @@
                 [c.restaurant]: [c, ...(p[c.restaurant] || [])]
             }
         }, {})
-        Object.values(restaurants).forEach(records => {
-            const today = new Date().getDay() + 1
-            records.forEach(record => {
-                const { dow, restaurant, food_description, source_url, last_updated } = record;
-                if (!food_description || !restaurant || !source_url) return;
-                const item = $(`
-                <a href="${html2url(source_url)}" class="media text-muted pt-3">
+        function filterTypes(record) {
+            const today = new Date().getDay() + 1;
+            const { dow, last_updated } = record;
+            const types = [];
+            if (dow == 0) types.push("static");
+            if (dow > 0 && dow === today) types.push("weekly");
+            if ((dow == 0 || (dow > 0 && dow === today)) && (new Date() - new Date(last_updated)) / (24 * 60 * 60 * 1000) < 1) types.push('newlyupdated');
+            return types;
+        }
+        function restaurantTemplate({source_url, food_description, restaurant}) {
+            return $(`
+                <a href="${html2url(source_url)}" class="restaurant-item media text-muted pt-3" target="blank">
                     <img alt="" src="${html2url(source_url)}/favicon.ico" style="max-height: 40px;max-width: 40px;"
                         class="mr-2 rounded">
                     <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
                         <strong class="d-block text-gray-dark">${html2text(restaurant)}</strong>
-                        ${html2text(food_description)}
+                        ${html2text(food_description ? food_description : 'Kunde inte hämta informatio om maten, kolla över så att sidan inte ändrats')}
                     </p>
                 </a>
-                `);
-                if (dow == 0) item.clone().insertAfter(staticmenu);
-                if (dow > 0 && r.dow === today) item.clone().insertAfter(weekmenu);
-                if ((dow == 0 || dow > 0 && r.dow === today) && new Date() - new Date(last_updated) / (24 * 60 * 60 * 1000) < 1) item.clone().insertAfter(weekmenu);
+            `);
+        }
+        Object.values(restaurants).forEach(records => {
+            const staticRecords = records.filter(r => filterTypes(r).includes('static') && r.restaurant && r.source_url);
+            if (staticRecords.length > 0) restaurantTemplate(staticRecords[0]).clone().insertAfter(staticmenu);
+            records.forEach(record => {
+                const { restaurant, source_url } = record;
+                if (!restaurant || !source_url) return;
+                const item = restaurantTemplate(record);
+                const types = filterTypes(record);
+                if (types.includes('weekly')) item.clone().insertAfter(weekmenu);
+                if (types.includes('newlyupdated')) item.clone().insertAfter(newlyupdated);
                 item.clone().insertAfter(allmenu);
             });
+        });
+        $('#randomFoodModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget) // Button that triggered the modal
+            const filter = button.data('filter') || 'all';
+            const modalBody = $(this).find('.modal-body').text('');
+            const r = Object.values(restaurants).reduce((p, c) => {
+                return [...p, ...c.filter(m => filterTypes(m).includes(filter))];
+            });
+            const restaurantIdx = Math.floor(Math.random() * r.length);
+            modalBody.append(restaurantTemplate(r[restaurantIdx]));
+        });
+        $('#listFoodModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget) // Button that triggered the modal
+            const filter = button.data('filter') || 'all';
+            const modalBody = $(this).find('.modal-body').text('');
+            const rs = Object.values(restaurants);
+            rs.forEach(r => {
+                r.forEach(m => {
+                    if (filter === 'all' || filterTypes(m).includes(filter)) {
+                        modalBody.append(restaurantTemplate(m));
+                    }
+                });
+            });
+        });
+        $('#search').on('keyup', function () {
+            $('.restaurant-item').toArray().forEach(el => {
+                console.log(typeof el.innerText, this.value)
+                if (this.value === '' || el.innerText.toString().indexOf(this.value) >= 0) $(el).show();
+                else $(el).hide();
+            })
         })
-    })
+    }
+    $.get('/api/restaurants/menu').then(handleMenu).catch(() => handleMenu([
+        {restaurant: ':/', dow: 0, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#', last_updated: new Date().toString()},
+        {restaurant: ':/', dow: 1, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#'},
+        {restaurant: ':/', dow: 2, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#'},
+        {restaurant: ':/', dow: 3, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#'},
+        {restaurant: ':/', dow: 4, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#'},
+        {restaurant: ':/', dow: 5, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#'},
+        {restaurant: ':/', dow: 6, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#'},
+        {restaurant: ':/', dow: 7, food_description: 'Något kan vara fel, vi saknar menyer :/', source_url: '#'},
+    ]))
+    const food=["fa-hamburger", "fa-fish", "fa-bacon", "fa-coffee", "fa-egg", 'fa-pizza-slice', 'fa-pepper-hot', 'fa-bread-slice', 'fa-cocktail', 'fa-mug-hot'];
+    function updateFoodIcons(posfix) {
+        $(".random-food" + (posfix || '')).toArray().forEach((el)=>{
+            const randomfood = food[Math.floor(Math.random()*food.length)];
+            ($(el).find('i.fas')[0] || {}).className = `fas ${randomfood} random-food fa-fw fa-lg text-white mr-2 rounded`
+        })
+    }
+    updateFoodIcons();
+    setInterval(()=> updateFoodIcons(':hover'),200)
 })()
