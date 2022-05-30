@@ -60,6 +60,7 @@ def do_request(url, save_base_url: bool = False):
             media_type=media_type
         )
         if save_base_url:
+            base_url = ext_request.url
             if 'http' in base_url:
                 base_url = '//'.join(base_url.split('//')[1:])
             # base_url.count('/') > 2 and '.' in os.path.basename(base_url.split('://')[1]):
