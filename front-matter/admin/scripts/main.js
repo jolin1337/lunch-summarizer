@@ -190,9 +190,9 @@
                 const wrapperEl = $('<span class="kv22"></span>');
                 let prevWrapperEl = null;
                 t.nodeValue.split('\n').forEach((textPart, i) => {
-                    const partEl = wrapperEl.clone().text(t.nodeValue)[0];
+                    const partEl = wrapperEl.clone().text(t.nodeValue);
                     if (i == 0) {
-                        t.parentNode.replaceChild(wrapperEl[0], t);
+                        t.parentNode.replaceChild(partEl[0], t);
                         prevWrapperEl = partEl;
                     } else {
                         partEl.insertAfter(prevWrapperEl);
