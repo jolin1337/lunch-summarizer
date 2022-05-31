@@ -192,7 +192,7 @@
                 t.nodeValue.split('\n').forEach((textPart, i) => {
                     const partEl = wrapperEl.clone().text(t.nodeValue)[0];
                     if (i == 0) {
-                        t.parentNode.replaceChild(wrapperEl, t);
+                        t.parentNode.replaceChild(wrapperEl[0], t);
                         prevWrapperEl = partEl;
                     } else {
                         partEl.insertAfter(prevWrapperEl);
