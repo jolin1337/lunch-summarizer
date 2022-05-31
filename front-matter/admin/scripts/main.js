@@ -186,7 +186,7 @@
         previewWebsite(ith);
         overlay.on('click', () => overlay.remove());
         waitUntilIframeContentAvailable(() => {
-            const allElementsInIframe = $($('iframe').contents().find('*').contents().toArray().filter(t => t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
+            const allElementsInIframe = $($('iframe').contents().find('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
                 const wrapperEl = $('<span class="kv22"></span>');
                 let prevWrapperEl = null;
                 t.nodeValue.split('\n').forEach((textPart, i) => {
