@@ -186,7 +186,20 @@
         previewWebsite(ith);
         overlay.on('click', () => overlay.remove());
         waitUntilIframeContentAvailable(() => {
-            const allElementsInIframe = $('iframe').contents().find('*');
+            const allElementsInIframe = $($('iframe').contents().find('*').contents().toArray().filter(t => t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
+                const wrapperEl = $('<span class="kv22"></span>');
+                let prevWrapperEl = null;
+                t.nodeValue.split('\n').forEach((textPart, i) => {
+                    const partEl = wrapperEl.clone().text(t.nodeValue)[0];
+                    if (i == 0) {
+                        t.parentNode.replaceChild(wrapperEl, t);
+                        prevWrapperEl = partEl;
+                    } else {
+                        partEl.insertAfter(prevWrapperEl);
+                    }
+                });
+                return wrapperEl;
+            }));
             var style = $(`
             <style>
                 .kv22-highlight { background-color: yellow !important; }
@@ -207,23 +220,38 @@
                 ev.target.classList.remove('kv22-highlight');
                 return false;
             };
-            const mouseclick = function (ev) {
+            let startElement = null;
+            const mousedown = function (ev) {
+                startElement = ev.target;
+            };
+            const mouseup = function (ev) {
                 ev.stopPropagation();
                 ev.preventDefault();
-                const extractor = getPath(ev.target).replace('.kv22-highlight', '');
+                let extractor = getPath(ev.target).replace(/\.kv22-highlight/g, '');
+                let value = ev.target.innerHTML;
+                if (startElement !== ev.target) {
+                    value = startElement.innerHTML + value;
+                    extractor = getPath(startElement).replace(/\.kv22-highlight/g, '') + '\n' + extractor;
+                }
                 selectorInputEl.value = extractor;
-                $(selectorInputEl).parent().parent().find('.input-info').text(ev.target.innerHTML);
+                $(selectorInputEl).parent().parent().find('.input-info').text(value);
+                
+                // reset all elements in page
                 overlay.remove();
                 style.remove();
+                allElementsInIframe.each(el => {
+                    el.parentNode.replaceChild($(el).contents()[0], el);
+                });
                 allElementsInIframe.off('mouseout', mouseout);
                 allElementsInIframe.off('mouseover', mouseover);
-                allElementsInIframe.off('click', mouseclick);
+                allElementsInIframe.off('click', mouseup);
                 previewWebsite(ith);
                 return false;
             };
             allElementsInIframe.on('mouseover', mouseover);
             allElementsInIframe.on('mouseout', mouseout);
-            allElementsInIframe.on('click', mouseclick);
+            allElementsInIframe.on('mousedown', mousedown);
+            allElementsInIframe.on('mouseup', mouseup);
         });
     }
     function waitUntilIframeContentAvailable(cb) {
