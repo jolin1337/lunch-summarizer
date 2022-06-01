@@ -167,7 +167,7 @@
         let subpath = elem.tagName;
         let els = Array.from(elem.parentNode.children).filter(c => c.tagName === elem.tagName);
         if (elem.className) {
-            els = els.filter(c => Math.max(Array.from(c.classList).map(cl => !elem.classList.contains(cl))) == 0)
+            els = els.filter(c => Math.max(...Array.from(c.classList).map(cl => !elem.classList.contains(cl))) == 0);
             subpath = "> " + elem.tagName + "." + elem.className.replace(/ /g, '.');
         }
         path = path + ' ' + subpath;
