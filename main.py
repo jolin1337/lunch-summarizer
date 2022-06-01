@@ -152,6 +152,28 @@ def get_restaurant_menues():
                 source_url = 'https://' + source_url
             try:
                 driver.get(source_url)
+                driver.execute_script("""
+                var script = document.createElement( 'script' );
+                script.type = 'text/javascript';
+                script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js';
+                document.head.appendChild(script);
+                """)
+                driver.execute_script("""
+                    const allElementsInIframe = $($('iframe').contents().find('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
+                        const wrapperEl = $('<span class="kv22"></span>');
+                        let prevWrapperEl = null;
+                        return t.nodeValue.split('\n').map((textPart, i) => {
+                            const partEl = wrapperEl.clone().text(t.nodeValue);
+                            if (i == 0) {
+                                t.parentNode.replaceChild(partEl[0], t);
+                                prevWrapperEl = partEl;
+                            } else {
+                                partEl.insertAfter(prevWrapperEl);
+                            }
+                            return partEl[0];
+                        });
+                    }).reduce((p, c) => [...p, ...c], []));
+                """)
                 if (menu['extractor'].startswith('[') and menu['extractor'].endswith(']')) or (menu['extractor'].startswith('{') and menu['extractor'].endswith('}')):
                     pass
                 else:
