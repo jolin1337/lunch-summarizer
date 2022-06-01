@@ -159,7 +159,7 @@ def get_restaurant_menues():
                 document.head.appendChild(script);
                 """)
                 driver.execute_script("""
-                    const allElementsInIframe = $($('iframe').contents().find('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
+                    const allElementsInIframe = $($('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
                         const wrapperEl = $('<span class="kv22"></span>');
                         let prevWrapperEl = null;
                         return t.nodeValue.split('\n').map((textPart, i) => {
