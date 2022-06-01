@@ -177,9 +177,12 @@ def get_restaurant_menues():
                 if (menu['extractor'].startswith('[') and menu['extractor'].endswith(']')) or (menu['extractor'].startswith('{') and menu['extractor'].endswith('}')):
                     pass
                 else:
+                    print("Find element:" + menu['extractor'])
                     menu['food_description'] = driver.find_element(
                         by=By.CSS_SELECTOR, value=menu['extractor']).text
+                    print("Description:" + menu['food_description'])
             except:
+                print("error!")
                 print(traceback.format_exc())
             menu['last_updated'] = now.isoformat()
             table = tables['Menu']
