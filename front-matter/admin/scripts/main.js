@@ -239,8 +239,8 @@
                 // reset all elements in page
                 overlay.remove();
                 style.remove();
-                allElementsInIframe.each(el => {
-                    el.parentNode.replaceChild($(el).contents()[0], el);
+                allElementsInIframe.each(function () {
+                    this.parentNode.replaceChild($(this).contents()[0], this);
                 });
                 allElementsInIframe.off('mouseout', mouseout);
                 allElementsInIframe.off('mouseover', mouseover);
