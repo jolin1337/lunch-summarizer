@@ -240,7 +240,12 @@
                 overlay.remove();
                 style.remove();
                 allElementsInIframe.each(function () {
-                    this.parentNode.replaceChild($(this).contents()[0], this);
+                    const newEl = $(this).contents()[0];
+                    if (newEl) {
+                        this.parentNode.replaceChild(newEl, this);
+                    } else {
+                        this.parentNode.removeChild(this);
+                    }
                 });
                 allElementsInIframe.off('mouseout', mouseout);
                 allElementsInIframe.off('mouseover', mouseover);
