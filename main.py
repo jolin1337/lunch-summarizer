@@ -152,7 +152,7 @@ def get_restaurant_menues():
                 source_url = 'https://' + source_url
             try:
                 driver.get(source_url)
-                with open('front-matter/vendor/jquery.slim.js', 'r') as jquery_js:
+                with open('front-matter/vendor/jquery/jquery.slim.js', 'r') as jquery_js:
                     driver.execute_script(jquery_js.read())
                 driver.execute_script("""
                     const allElementsInIframe = $($('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
