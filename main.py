@@ -14,12 +14,9 @@ import yaml
 from api.schema.menu import Menu
 import chromebrowser
 from selenium.webdriver.common.by import By
+from config import get_menu_from_db, tables, engine
+from crawler import crawl_website
 
-
-def get_menu_from_db(connection):
-    d = pd.read_sql_table('Menu', connection, parse_dates=['last_updated'])
-    print(d)
-    return d
 
 
 app = FastAPI()
@@ -28,30 +25,6 @@ app.mount("/admin", StaticFiles(directory="front-matter/admin"),
           name="static-admin")
 app.mount("/vendor", StaticFiles(directory="front-matter/vendor"),
           name="static-vendor")
-db_types = db_types.__dict__
-
-try:
-    os.makedirs('data', exist_ok=True)
-    config = yaml.safe_load(
-        open('config/' + os.environ.get('ENV', 'development') + '.yaml', 'r'))
-    engine = engine_from_config(config, prefix='')
-except:
-    engine = create_engine(os.environ.get('DB_URI'))
-    print("DB Loaded:", os.environ.get('DB_URI'))
-schemas_json = [Menu.schema()]
-tables = {}
-with engine.connect() as connection:
-    dbmeta = MetaData()
-    for schema in schemas_json:
-        columns = [Column(name=key, type_=db_types[prop['type'].title()], default=None)
-                   for key, prop in schema['properties'].items()]
-        tables[schema['title']] = Table(schema['title'], dbmeta, *columns)
-        # if not inspect(engine).has_table(schema['title']):
-        #    print("Creating " + schema['title'])
-        #    tables[schema['title']].__table__.create(bind=engine, checkfirst=True)
-    dbmeta.create_all(bind=connection, checkfirst=True)
-    data = get_menu_from_db(connection)
-
 
 def do_request(url, save_base_url: bool = False):
     try:
@@ -77,70 +50,6 @@ def do_request(url, save_base_url: bool = False):
         print("Connection error!")
         response = Response(status_code=404)
     return response
-
-def crawl_website(menu, source_url, driver=None, connection=None, transaction=None):
-    if driver is None:
-        driver = chromebrowser.load_web_driver()
-    now = datetime.now()
-    try:
-        print("Crawling website:", source_url)
-        driver.get(source_url)
-        with open('front-matter/vendor/jquery/jquery.min.js', 'r') as jquery_js:
-            driver.execute_script(jquery_js.read() + """
-                try {
-                    const allElementsInIframe = $($('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
-                        const wrapperEl = $('<span class="kv22"></span>');
-                        let prevWrapperEl = null;
-                        return t.nodeValue.split('\\n').map((textPart, i) => {
-                            const partEl = wrapperEl.clone().text(textPart);
-                            if (i == 0) {
-                                t.parentNode.replaceChild(partEl[0], t);
-                                prevWrapperEl = partEl;
-                            } else {
-                                partEl.insertAfter(prevWrapperEl);
-                            }
-                            return partEl[0];
-                        });
-                    }).reduce((p, c) => [...p, ...c], []));
-                } catch(e) {
-                    console.error(e);
-                    throw e;
-                }
-            """)
-        if (menu['extractor'].startswith('[') and menu['extractor'].endswith(']')) or (menu['extractor'].startswith('{') and menu['extractor'].endswith('}')):
-            instructions = json.loads(menu['extractor'])
-            print("Instructions:", instructions)
-        else:
-            print("Find element:" + menu['extractor'])
-            menu['food_description'] = driver.find_element(
-                by=By.CSS_SELECTOR, value=menu['extractor']).text
-            print("Description:" + menu['food_description'])
-    except:
-        print("error!")
-        print(traceback.format_exc())
-    menu['last_updated'] = now.isoformat()
-    table = tables['Menu']
-    try:
-        if connection is None:
-            connection = engine.connect()
-            transaction = connection.begin()
-        connection.execute(table.update().where(
-            and_(
-                table.c.dow == menu['dow'],
-                table.c.restaurant == menu['restaurant']
-            )
-        ).values(
-            last_updated=menu['last_updated'],
-            food_description=menu['food_description']
-        ))
-    except:
-        print("error!")
-        print(traceback.format_exc())
-        connection.close()
-        transaction.close()
-        connection = None
-        transaction = None
-    return connection, transaction
 
 @app.get("/")
 @app.get("/user")
@@ -229,7 +138,7 @@ def get_restaurant_menues(force_update: bool = False):
             source_url = menu['source_url']
             if not source_url.startswith('http'):
                 source_url = 'https://' + source_url
-            connection, transaction = crawl_website( menu, source_url, 
+            connection, transaction = crawl_website(source_url, menu, 
                 driver=driver, 
                 connection=connection, 
                 transaction=transaction)

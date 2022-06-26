@@ -40,7 +40,7 @@
     function menuDOWTemplate(record) {
         const id = $('#restaurantdetails').attr('data-id');
         if (!(id in restaurants)) restaurants[id] = record;
-        const { dow, source_url, restaurant, extractor } = record;
+        const { dow, source_url, food_description, extractor } = record;
         return $(`
             <li class="restaurant-selector row no-gutters list-group-item align-items-center">
                 <div style="margin: -20px -34px 0 0;float: right; position: relative; z-index: 1" onclick="this.parentNode.classList.add('remove-restaurant');" class="row btn btn-danger btn-sm" tabindex="-1" role="button" aria-disabled="true">
@@ -72,7 +72,7 @@
                                 </div>
                                 <input type="text" value="${html2text(extractor)}" name="extractor" class="form-control" placeholder="Selecterare" aria-label="Selecterare" aria-describedby="basic-addon3">
                             </div>
-                            <div class="input-info"></div>
+                            <div class="input-info">${food_description || ''}</div>
                         </div>
                     </div>
                 </div>
@@ -157,7 +157,7 @@
             `).appendTo(webpreview);
         }
     };
-    
+
     function getPath(elem) {
         if (elem.id)
             return "#" + elem.id;
@@ -172,7 +172,7 @@
         }
         path = path + ' ' + subpath;
         if (els.length > 1) {
-            const nth = els.indexOf(elem);
+            const nth = Math.max(Array.from(elem.parentNode.children).indexOf(elem), 0);// els.indexOf(elem);
             path = path + ':nth-child(' + (nth + 1) + ')';
         }
         return path;
@@ -186,6 +186,14 @@
         previewWebsite(ith);
         overlay.on('click', () => overlay.remove());
         waitUntilIframeContentAvailable(() => {
+            $('iframe').contents().find('.kv22').each(function () {
+                const newEl = $(this).contents()[0];
+                if (newEl && this.tagName !== 'style') {
+                    this.parentNode.replaceChild(newEl, this);
+                } else {
+                    this.parentNode.removeChild(this);
+                }
+            });
             const allElementsInIframe = $($('iframe').contents().find('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
                 const wrapperEl = $('<span class="kv22"></span>');
                 let prevWrapperEl = null;
@@ -201,7 +209,7 @@
                 });
             }).reduce((p, c) => [...p, ...c], []));
             var style = $(`
-            <style>
+            <style class="kv22">
                 .kv22-highlight { background-color: yellow !important; }
                 * {cursor: crosshair !important;}
             </style>
@@ -235,7 +243,7 @@
                 }
                 selectorInputEl.value = extractor;
                 $(selectorInputEl).parent().parent().find('.input-info').text(value);
-                
+
                 // reset all elements in page
                 overlay.remove();
                 style.remove();
@@ -260,7 +268,9 @@
         });
     }
     function waitUntilIframeContentAvailable(cb) {
+        $('iframe').contents().find('html').css('cursor', 'progress');
         if ($('iframe').contents()[0].readyState === 'complete' && $('iframe').contents().find('body').children().length > 0) {
+            $('iframe').contents().find('html').css('cursor', 'inherit');
             return cb();
         }
         setTimeout(() => waitUntilIframeContentAvailable(cb), 300);
