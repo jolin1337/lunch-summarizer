@@ -24,7 +24,8 @@ def soup_crawler(source_url, menu):
             nodes_to_insert = temp.find('body').children
             for i, node in enumerate(nodes_to_insert):
                 child.parent.insert(i, node)
-    return soup.select_one(menu['extractor']).text
+    print("Find element:" + menu['extractor'])
+    return '\n'.join([soup.select_one(extractor.strip()).text for extractor in menu['extractor'].split(',')])
 
 def selenium_crawler(source_url, menu, driver=None):
     if driver is None:
@@ -59,7 +60,7 @@ def selenium_crawler(source_url, menu, driver=None):
             print("Instructions:", instructions)
         else:
             print("Find element:" + menu['extractor'])
-            return driver.find_element(by=By.CSS_SELECTOR, value=menu['extractor']).text
+            return '\n'.join([el.text for el in driver.find_elements(by=By.CSS_SELECTOR, value=menu['extractor'])])
     except:
         print("error!")
         print(traceback.format_exc())

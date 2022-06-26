@@ -117,7 +117,7 @@
                 </div>
             </li>
         `).appendTo(list)
-        records.forEach(record => {
+        records.sort((a, b) => a.dow - b.dow).forEach(record => {
             menuDOWTemplate(record).appendTo(list)
         });
         const addBtn = $('<div style="margin-top: -20px; position: relative; z-index: 1" class="row btn btn-primary" tabindex="-1" role="button" aria-disabled="true"><i class="fas fa-plus"></i></div>')
@@ -163,16 +163,18 @@
             return "#" + elem.id;
         if (elem.tagName == "BODY")
             return 'BODY';
-        let path = getPath(elem.parentNode);
-        let subpath = elem.tagName;
-        let els = Array.from(elem.parentNode.children).filter(c => c.tagName === elem.tagName);
+        let path = elem.parentNode ? getPath(elem.parentNode) : '';
+        let subpath = elem.tagName || '';
+        const siblings = Array.from(elem.parentNode ? elem.parentNode.children : $(elem).siblings());
+        let els = siblings.filter(c => c.tagName === elem.tagName);
+        !elem.parentNode && console.log("siblings", siblings)
         if (elem.className) {
             els = els.filter(c => Math.max(...Array.from(c.classList).map(cl => !elem.classList.contains(cl))) == 0);
             subpath = "> " + elem.tagName + "." + elem.className.replace(/ /g, '.');
         }
         path = path + ' ' + subpath;
         if (els.length > 1) {
-            const nth = Math.max(Array.from(elem.parentNode.children).indexOf(elem), 0);// els.indexOf(elem);
+            const nth = Math.max(siblings.indexOf(elem), 0);// els.indexOf(elem);
             path = path + ':nth-child(' + (nth + 1) + ')';
         }
         return path;
@@ -186,7 +188,8 @@
         previewWebsite(ith);
         overlay.on('click', () => overlay.remove());
         waitUntilIframeContentAvailable(() => {
-            $('iframe').contents().find('.kv22').each(function () {
+            const iframeContents = $('iframe').contents();
+            iframeContents.find('.kv22').each(function () {
                 const newEl = $(this).contents()[0];
                 if (newEl && this.tagName !== 'style') {
                     this.parentNode.replaceChild(newEl, this);
@@ -194,27 +197,32 @@
                     this.parentNode.removeChild(this);
                 }
             });
-            const allElementsInIframe = $($('iframe').contents().find('*').contents().toArray().filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim()).map(t => {
-                const wrapperEl = $('<span class="kv22"></span>');
-                let prevWrapperEl = null;
-                return t.nodeValue.split('\n').map((textPart, i) => {
-                    const partEl = wrapperEl.clone().text(textPart);
-                    if (i == 0) {
-                        t.parentNode.replaceChild(partEl[0], t);
-                        prevWrapperEl = partEl;
-                    } else {
-                        partEl.insertAfter(prevWrapperEl);
-                    }
-                    return partEl[0];
-                });
-            }).reduce((p, c) => [...p, ...c], []));
+            const allElementsInIframe = $(iframeContents
+                .find('*')
+                .contents()
+                .toArray()
+                .filter(t => t.getRootNode().body.contains(t) && t.nodeType == 3 && !!t.nodeValue.trim())
+                .map(t => {
+                    const wrapperEl = $('<span class="kv22"></span>');
+                    let prevWrapperEl = null;
+                    return t.nodeValue.split('\n').map((textPart, i) => {
+                        const partEl = wrapperEl.clone().text(textPart);
+                        if (i == 0) {
+                            t.parentNode.replaceChild(partEl[0], t);
+                            prevWrapperEl = partEl;
+                        } else {
+                            partEl.insertAfter(prevWrapperEl);
+                        }
+                        return partEl[0];
+                    });
+                }).reduce((p, c) => [...p, ...c], []));
             var style = $(`
             <style class="kv22">
                 .kv22-highlight { background-color: yellow !important; }
                 * {cursor: crosshair !important;}
             </style>
             `);
-            style.appendTo($('iframe').contents().find('head'));
+            style.appendTo(iframeContents.find('head'));
             //allElementsInIframe.css('cursor', 'crosshair');
             const mouseover = (ev) => {
                 ev.stopPropagation();
@@ -235,11 +243,19 @@
             const mouseup = function (ev) {
                 ev.stopPropagation();
                 ev.preventDefault();
-                let extractor = getPath(ev.target).replace(/\.kv22-highlight/g, '');
-                let value = ev.target.innerHTML;
-                if (startElement !== ev.target) {
-                    value = startElement.innerHTML + value;
-                    extractor = getPath(startElement).replace(/\.kv22-highlight/g, '') + '\n' + extractor;
+                const selection = getSelectedTextFromIframe().getRangeAt(0);
+                const selectionContents = selection.cloneContents();
+                let extractor, value;
+                if (selectionContents) {
+                    const kv22Els = Array.from(selectionContents.children).filter(n => n && n.classList.contains('kv22'));
+                    console.log(kv22Els);
+                    value = kv22Els.map(n => n.innerText).join(' \n');
+                    let baseNode = selection.commonAncestorContainer;
+                    const baseSelector = getPath(baseNode);
+                    extractor = baseSelector + kv22Els.map(n => getPath(n).replace(/\.kv22-highlight/g, '')).join(', ' + baseSelector);
+                } else {
+                    extractor = getPath(ev.target).replace(/\.kv22-highlight/g, '');
+                    value = ev.target.innerHTML;
                 }
                 selectorInputEl.value = extractor;
                 $(selectorInputEl).parent().parent().find('.input-info').text(value);
@@ -275,7 +291,25 @@
         }
         setTimeout(() => waitUntilIframeContentAvailable(cb), 300);
     }
-
+    function getSelectedTextFromIframe() {
+        var selectedText = '';
+        const baseEl = $('iframe').contents()[0];
+        // window.getSelection
+        // if (baseEl.getSelection) {
+        //     selectedText = baseEl.getSelection();
+        // }
+        // document.getSelection
+        if (baseEl.getSelection) {
+            selectedText = baseEl.getSelection();
+        }
+        // document.selection
+        else if (baseEl.selection) {
+            selectedText =
+                baseEl.selection.createRange().text;
+        } else return;
+        // To write the selected text into the textarea
+        return selectedText;
+    }
     function setupRestaurants() {
         const container = $("#restaurantcontainer");
         container.text("")
@@ -299,7 +333,7 @@
                 }
             }, {});
             container.text("");
-            Object.keys(restaurants).forEach((_, id) => {
+            Object.entries(restaurants).forEach(([id, _]) => {
                 const today = new Date().getDay() + 1;
                 const i = restaurants[id].findIndex(r => r.dow === 0 || r.dow === today);
                 const template = restaurantTemplate(id, i);
