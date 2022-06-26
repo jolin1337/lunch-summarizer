@@ -141,7 +141,7 @@
         const ith = i || 0;
         const webpreview = $('#webpreview');
         const id = $('#restaurantdetails').attr('data-id');
-        const sourceUrl = $('input[name="source_url"]')[ith].value || restaurants[id][ith].source_url;
+        const sourceUrl = $('input[name="source_url"]')[ith].value || restaurants[id][restaurants[id].length - 1].source_url;
         const url = `/api/scrape/external/render/index.html?url=${sourceUrl}`;
         const iframe = $('iframe');
         if (iframe.length === 0 || iframe.attr('src') !== url) {
